@@ -4,6 +4,7 @@ import useAuth from "@/app/hooks/useAuth";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { FaFacebook, FaGoogle } from "react-icons/fa";
 
 const SignInPage = () => {
@@ -72,6 +73,20 @@ const SignInPage = () => {
     } catch (error) {
       console.error("Error during Google login:", error);
     }
+  };
+
+  const handleFacebookLogin = () => {
+    toast.success("Facebook Login Coming Soon", {
+      style: {
+        border: "1px solid #713200",
+        padding: "16px",
+        color: "#713200",
+      },
+      iconTheme: {
+        primary: "#713200",
+        secondary: "#FFFAEE",
+      },
+    });
   };
 
   if (loading) {

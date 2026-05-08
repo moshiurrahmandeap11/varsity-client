@@ -1,10 +1,11 @@
 import { LayoutDashboard, Settings, Users } from "lucide-react";
+import { GrAnnounce } from "react-icons/gr";
 import { PiFlagBanner } from "react-icons/pi";
 
 export const sidebarItems = [
   { id: 1, name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   {
-    id: 3,
+    id: 2,
     name: "Banners",
     icon: PiFlagBanner,
     children: [
@@ -13,7 +14,16 @@ export const sidebarItems = [
     ],
   },
   {
-    id: 2,
+    id: 3,
+    name: "Notices",
+    icon: GrAnnounce,
+    children: [
+      { id: 41, name: "All Notices", href: "/admin/notices" },
+      { id: 42, name: "Add Notice", href: "/admin/notices/add" },
+    ]
+  },
+  {
+    id: 4,
     name: "User Management",
     icon: Users,
     children: [
@@ -22,7 +32,7 @@ export const sidebarItems = [
       { id: 23, name: "Roles & Permissions", href: "/admin/users/roles" },
     ],
   },
-  { id: 4, name: "Settings", href: "/admin/settings", icon: Settings },
+  { id: 5, name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 // helper: faltten items for easier path matching

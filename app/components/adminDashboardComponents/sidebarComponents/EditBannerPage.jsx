@@ -2,24 +2,28 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
-    FiArrowLeft,
-    FiEye,
-    FiEyeOff,
-    FiImage,
-    FiInfo,
-    FiLink,
-    FiSave,
-    FiTrash2,
-    FiUpload,
-    FiX
+  FiArrowLeft,
+  FiEye,
+  FiEyeOff,
+  FiImage,
+  FiInfo,
+  FiLink,
+  FiSave,
+  FiTrash2,
+  FiUpload,
+  FiX,
 } from "react-icons/fi";
 import axiosInstance from "../../sharedComponents/AxiosInstance/AxiosInstance";
 
-const EditBannerPage = ({ params }) => {
+const EditBannerPage = () => {
+  const params = useParams();
+  console.log("Params :", params);
+  const bannerId = params?.id;
+
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -27,38 +31,48 @@ const EditBannerPage = ({ params }) => {
     title: "",
     description: "",
     link: "",
-    isActive: true
+    isActive: true,
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  const bannerId = params?._id;
-  console.log("banner id :", bannerId);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Fetch banner data
   const fetchBanner = async () => {
+    if (!bannerId) {
+      console.error("No banner ID provided");
+      toast.error("Invalid banner ID");
+      router.push("/admin/banners");
+      return;
+    }
+
     try {
+      console.log(`Fetching banner with ID: ${bannerId}`);
       const res = await axiosInstance.get(`/banners/${bannerId}`);
+      console.log("API Response:", res.data);
+
       if (res.data.success) {
         const banner = res.data.data;
         setFormData({
           title: banner.title || "",
           description: banner.description || "",
           link: banner.link || "",
-          isActive: banner.isActive || false
+          isActive: banner.isActive !== undefined ? banner.isActive : true,
         });
-        setCurrentImageUrl(banner.image?.url);
+        setCurrentImageUrl(banner.image?.url || null);
       } else {
         toast.error(res.data.message || "Failed to fetch banner");
-        router.push("/dashboard/all-banners");
+        router.push("/admin/banners");
       }
     } catch (error) {
       console.error("Error fetching banner:", error);
-      toast.error("Failed to fetch banner data");
-      router.push("/dashboard/all-banners");
+      toast.error(
+        error.response?.data?.message || "Failed to fetch banner data",
+      );
+      router.push("/admin/banners");
     } finally {
       setFetching(false);
     }
@@ -67,22 +81,33 @@ const EditBannerPage = ({ params }) => {
   useEffect(() => {
     if (bannerId) {
       fetchBanner();
+    } else {
+      // If no bannerId, redirect after short delay
+      const timer = setTimeout(() => {
+        toast.error("No banner ID provided");
+        router.push("/admin/banners");
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [bannerId]);
 
   // Handle text input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   // Handle file selection
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size should be less than 5MB");
+        return;
+      }
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -110,6 +135,10 @@ const EditBannerPage = ({ params }) => {
     setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size should be less than 5MB");
+        return;
+      }
       setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -130,15 +159,14 @@ const EditBannerPage = ({ params }) => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation
+
     if (!formData.title.trim()) {
       toast.error("Please enter banner title");
       return;
     }
 
     setLoading(true);
-    
+
     const submitData = new FormData();
     if (selectedFile) {
       submitData.append("image", selectedFile);
@@ -151,13 +179,13 @@ const EditBannerPage = ({ params }) => {
     try {
       const res = await axiosInstance.put(`/banners/${bannerId}`, submitData, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
-      
+
       if (res.data.success) {
         toast.success("Banner updated successfully!");
-        router.push("/dashboard/all-banners");
+        router.push("/admin/banners");
       } else {
         toast.error(res.data.message || "Failed to update banner");
       }
@@ -175,13 +203,13 @@ const EditBannerPage = ({ params }) => {
       const res = await axiosInstance.delete(`/banners/${bannerId}`);
       if (res.data.success) {
         toast.success("Banner deleted successfully!");
-        router.push("/dashboard/all-banners");
+        router.push("/admin/banners");
       } else {
         toast.error(res.data.message || "Failed to delete banner");
       }
     } catch (error) {
       console.error("Error deleting banner:", error);
-      toast.error("Failed to delete banner");
+      toast.error(error.response?.data?.message || "Failed to delete banner");
     } finally {
       setShowDeleteModal(false);
     }
@@ -193,13 +221,37 @@ const EditBannerPage = ({ params }) => {
       <div className="min-h-screen bg-gray-50 p-4 md:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+            <div className="mb-6">
+              <div className="h-4 bg-gray-200 rounded w-32 mb-4"></div>
+              <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-64"></div>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-              <div className="h-10 bg-gray-200 rounded"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-              <div className="h-10 bg-gray-200 rounded"></div>
-              <div className="h-40 bg-gray-200 rounded"></div>
-              <div className="h-12 bg-gray-200 rounded"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-24 bg-gray-200 rounded"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-10 bg-gray-200 rounded"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-32"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-32"></div>
+                <div className="h-48 bg-gray-200 rounded"></div>
+              </div>
+              <div className="flex gap-3">
+                <div className="h-10 bg-gray-200 rounded flex-1"></div>
+                <div className="h-10 bg-gray-200 rounded flex-1"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -209,22 +261,27 @@ const EditBannerPage = ({ params }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-black p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-9xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <Link 
-              href="/admin/banners" 
+            <Link
+              href="/admin/banners"
               className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2 transition-colors"
             >
               <FiArrowLeft className="w-4 h-4" />
               <span className="text-sm">Back to Banners</span>
             </Link>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Edit Banner</h1>
-            <p className="text-gray-500 text-sm mt-1">Update your banner information</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              Edit Banner
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              Update your banner information
+            </p>
           </div>
-          
+
           <button
+            type="button"
             onClick={() => setShowDeleteModal(true)}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"
           >
@@ -234,7 +291,10 @@ const EditBannerPage = ({ params }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-sm overflow-hidden"
+        >
           <div className="p-6 space-y-6">
             {/* Title Field */}
             <div>
@@ -255,7 +315,8 @@ const EditBannerPage = ({ params }) => {
             {/* Description Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description <span className="text-gray-400 text-xs">(Optional)</span>
+                Description{" "}
+                <span className="text-gray-400 text-xs">(Optional)</span>
               </label>
               <textarea
                 name="description"
@@ -270,7 +331,8 @@ const EditBannerPage = ({ params }) => {
             {/* Link Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Link URL <span className="text-gray-400 text-xs">(Optional)</span>
+                Link URL{" "}
+                <span className="text-gray-400 text-xs">(Optional)</span>
               </label>
               <div className="relative">
                 <FiLink className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -288,13 +350,19 @@ const EditBannerPage = ({ params }) => {
             {/* Status Toggle */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="text-sm font-medium text-gray-700">Active Status</label>
-                <p className="text-xs text-gray-500 mt-1">Inactive banners won't be visible on the website</p>
+                <label className="text-sm font-medium text-gray-700">
+                  Active Status
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Inactive banners won&apos;t be visible on the website
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, isActive: !prev.isActive }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   formData.isActive ? "bg-blue-600" : "bg-gray-200"
                 }`}
               >
@@ -312,13 +380,23 @@ const EditBannerPage = ({ params }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Current Image
                 </label>
-                <div className="relative rounded-lg overflow-hidden border border-gray-200">
-                  <div className="relative h-48 md:h-64 bg-gray-100">
+                <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+                  <div className="relative h-48 md:h-64">
+                    {!imageLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
                     <Image
                       src={currentImageUrl}
-                      alt={formData.title}
+                      alt={formData.title || "Banner image"}
                       fill
-                      className="object-cover"
+                      className={`object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                      onLoadingComplete={() => setImageLoaded(true)}
+                      onError={() => {
+                        console.error("Failed to load image");
+                        setImageLoaded(true);
+                      }}
                     />
                   </div>
                   <div className="absolute top-2 right-2 flex gap-2">
@@ -335,7 +413,7 @@ const EditBannerPage = ({ params }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {selectedFile ? "New Image Preview" : "Change Image (Optional)"}
               </label>
-              
+
               {!previewUrl ? (
                 <div
                   onDragOver={handleDragOver}
@@ -355,7 +433,9 @@ const EditBannerPage = ({ params }) => {
                     className="hidden"
                   />
                   <FiImage className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Drag and drop a new image here, or</p>
+                  <p className="text-gray-600 mb-2">
+                    Drag and drop a new image here, or
+                  </p>
                   <label
                     htmlFor="image-upload"
                     className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition-all duration-200"
@@ -364,7 +444,8 @@ const EditBannerPage = ({ params }) => {
                     Browse Files
                   </label>
                   <p className="text-xs text-gray-400 mt-3">
-                    Leave empty to keep current image. Supports: JPG, PNG, GIF, WebP
+                    Leave empty to keep current image. Supports: JPG, PNG, GIF,
+                    WebP (Max 5MB)
                   </p>
                 </div>
               ) : (
@@ -396,14 +477,16 @@ const EditBannerPage = ({ params }) => {
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex gap-3">
-                <FiInfo className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <FiInfo className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-1">Banner Guidelines:</p>
                   <ul className="list-disc list-inside space-y-1 text-xs">
                     <li>Recommended image size: 1200 x 400 pixels</li>
                     <li>Keep file size under 2MB for better performance</li>
                     <li>Use high-quality images for better visual appeal</li>
-                    <li>Make sure the text is readable on the image background</li>
+                    <li>
+                      Make sure the text is readable on the image background
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -411,11 +494,13 @@ const EditBannerPage = ({ params }) => {
 
             {/* Status Badges */}
             <div className="flex flex-wrap gap-3 pt-2">
-              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                formData.isActive 
-                  ? "bg-green-100 text-green-700" 
-                  : "bg-gray-100 text-gray-600"
-              }`}>
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                  formData.isActive
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
                 {formData.isActive ? (
                   <>
                     <FiEye className="w-3.5 h-3.5" />
@@ -428,7 +513,7 @@ const EditBannerPage = ({ params }) => {
                   </>
                 )}
               </div>
-              
+
               {selectedFile && (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
                   <FiUpload className="w-3.5 h-3.5" />
@@ -442,7 +527,7 @@ const EditBannerPage = ({ params }) => {
           <div className="border-t border-gray-200 p-6 bg-gray-50 flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              onClick={() => router.push("/dashboard/all-banners")}
+              onClick={() => router.push("/admin/banners")}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-all duration-200"
             >
               Cancel
@@ -471,14 +556,16 @@ const EditBannerPage = ({ params }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-red-100 rounded-full p-2">
                     <FiTrash2 className="w-6 h-6 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete Banner</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Delete Banner
+                  </h3>
                 </div>
                 <button
                   onClick={() => setShowDeleteModal(false)}
@@ -487,14 +574,19 @@ const EditBannerPage = ({ params }) => {
                   <FiX className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <p className="text-gray-600 mb-2">
-                Are you sure you want to delete <strong className="text-gray-900">"{formData.title}"</strong>?
+                Are you sure you want to delete{" "}
+                <strong className="text-gray-900">
+                  &quot;{formData.title}&quot;
+                </strong>
+                ?
               </p>
               <p className="text-gray-500 text-sm mb-6">
-                This action cannot be undone. The banner image will be permanently deleted from Cloudinary.
+                This action cannot be undone. The banner image will be
+                permanently deleted from Cloudinary.
               </p>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
@@ -513,37 +605,6 @@ const EditBannerPage = ({ params }) => {
           </div>
         </div>
       )}
-
-      {/* CSS Animations */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes zoomIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        
-        .animate-in {
-          animation: fadeIn 0.2s ease-out;
-        }
-        
-        .zoom-in {
-          animation: zoomIn 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
