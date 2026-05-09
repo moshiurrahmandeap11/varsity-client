@@ -45,36 +45,6 @@
 
 ---
 
-<!-- TABLE OF CONTENTS -->
-<details open>
-  <summary style="font-size: 1.5rem; font-weight: 700; cursor: pointer; color: #e2e8f0; margin-bottom: 15px;">
-    Table of Contents
-  </summary>
-  <ol style="list-style: none; padding-left: 0;">
-    <li><a href="#about-the-project">About The Project</a></li>
-    <li><a href="#features">Features</a>
-      <ul>
-        <li><a href="#authentication-system">Authentication System</a></li>
-        <li><a href="#notice-management">Notice Management</a></li>
-        <li><a href="#social-interactions">Social Interactions</a></li>
-        <li><a href="#admin-dashboard">Admin Dashboard</a></li>
-      </ul>
-    </li>
-    <li><a href="#tech-stack">Tech Stack</a></li>
-    <li><a href="#screenshots">Screenshots</a></li>
-    <li><a href="#installation">Installation & Setup</a></li>
-    <li><a href="#project-structure">Project Structure</a></li>
-    <li><a href="#api-endpoints">API Endpoints</a></li>
-    <li><a href="#ui-components">UI Components</a></li>
-    <li><a href="#database-schema">Database Schema</a></li>
-    <li><a href="#contributors">Contributors</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ol>
-</details>
-
----
-
 <!-- ABOUT THE PROJECT -->
 <h2 id="about-the-project" style="border-bottom: 3px solid #667eea; padding-bottom: 10px; display: inline-block;">
   About The Project
