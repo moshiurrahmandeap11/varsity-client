@@ -2,13 +2,18 @@
 
 import { getNoticeById } from "@/app/data/apidata";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft, Eye, FileText } from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { useReactionsSummary, useUserReaction, useToggleReaction } from "@/app/hooks/useSocial";
+import {
+  useReactionsSummary,
+  useUserReaction,
+  useToggleReaction,
+} from "@/app/hooks/useSocial";
 import CommentSection from "../sharedComponents/CommentSection/CommentSection";
 import ReactionButton from "../sharedComponents/ReactionButton/ReactionButton";
 import ShareButton from "../sharedComponents/ShareButton/ShareButton";
+import DownloadButton from "../sharedComponents/DownloadButton/DownloadButton";
 
 const NoticeDetailsPage = () => {
   const { id } = useParams();
@@ -16,8 +21,8 @@ const NoticeDetailsPage = () => {
 
   // Current user (আপনার auth system অনুযায়ী পরিবর্তন করুন)
   const currentUser = {
-    id: "user123", // actual user ID দিন
-    name: "Moshiur", // actual user name দিন
+    id: "user123",
+    name: "Moshiur",
   };
 
   const { data, isLoading, isError, error } = useQuery({
@@ -34,7 +39,10 @@ const NoticeDetailsPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white">
-        Loading...
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+          <span className="text-white/60 text-sm">Loading notice...</span>
+        </div>
       </div>
     );
   }
@@ -58,7 +66,6 @@ const NoticeDetailsPage = () => {
   const notice = data?.data;
   const file = notice?.file;
   const reactions = reactionsSummary?.data?.reactions || {};
-  const userReaction = userReactionData?.data || null;
   const totalReactions = reactionsSummary?.data?.total || 0;
 
   const handleReaction = async (type) => {
@@ -135,7 +142,10 @@ const NoticeDetailsPage = () => {
                 .filter(([, count]) => count > 0)
                 .slice(0, 3)
                 .map(([type, count]) => (
-                  <span key={type} className="px-1.5 py-0.5 rounded-full bg-white/5">
+                  <span
+                    key={type}
+                    className="px-1.5 py-0.5 rounded-full bg-white/5"
+                  >
                     {count}
                   </span>
                 ))}
@@ -153,27 +163,40 @@ const NoticeDetailsPage = () => {
         {/* FILE PREVIEW SECTION */}
         {file && (
           <div className="mt-8">
-            <h2 className="text-sm text-white/60 mb-3 flex items-center gap-2">
-              <Eye size={16} />
-              Attachment
-            </h2>
+            {/* Header with Download Button */}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm text-white/60 flex items-center gap-2">
+                <Eye size={16} />
+                Attachment
+              </h2>
+
+              {/* ✅ Download Button এখানে */}
+              <DownloadButton file={file} />
+            </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               {/* IMAGE */}
               {file.fileType === "image" && (
-                <Image
-                  width={100}
-                  height={100}
-                  src={file.url}
-                  alt={file.originalName}
-                  className="w-full max-h-125 object-contain rounded-xl"
-                />
+                <div className="flex flex-col gap-3">
+                  <Image
+                    width={100}
+                    height={100}
+                    src={file.url}
+                    alt={file.originalName}
+                    className="w-full max-h-125 object-contain rounded-xl"
+                  />
+                  <p className="text-white/50 text-xs text-center">
+                    {file.originalName}
+                  </p>
+                </div>
               )}
 
               {/* PDF */}
               {file.fileType === "pdf" && (
                 <div className="flex flex-col gap-3">
-                  <p className="text-white/70 text-sm">{file.originalName}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-white/70 text-sm">{file.originalName}</p>
+                  </div>
 
                   <a
                     href={file.url}
@@ -189,6 +212,17 @@ const NoticeDetailsPage = () => {
                     className="w-full h-125 rounded-xl border border-white/10"
                     title={file.originalName}
                   />
+                </div>
+              )}
+
+              {/* Other file types */}
+              {!["image", "pdf"].includes(file.fileType) && (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <FileText size={48} className="text-white/30" />
+                  <p className="text-white/70 text-sm">{file.originalName}</p>
+                  <p className="text-white/40 text-xs">
+                    {file.fileType?.toUpperCase()} File
+                  </p>
                 </div>
               )}
             </div>

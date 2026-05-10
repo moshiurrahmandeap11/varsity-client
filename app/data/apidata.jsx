@@ -1,6 +1,5 @@
 import axiosInstance from "../components/sharedComponents/AxiosInstance/AxiosInstance";
 
-// ==================== NOTICES ====================
 export const notices = async () => {
   const res = await axiosInstance.get("/notices");
   return res.data;
@@ -11,7 +10,6 @@ export const getNoticeById = async (id) => {
   return res.data;
 };
 
-// ==================== REACTIONS ====================
 export const getReactionsSummary = async (
   contentId,
   contentType = "notice",
@@ -41,7 +39,6 @@ export const toggleReaction = async (reactionData) => {
   return res.data;
 };
 
-// ==================== COMMENTS ====================
 export const getComments = async (
   contentId,
   contentType = "notice",
@@ -91,5 +88,35 @@ export const getCommentCount = async (contentId, contentType = "notice") => {
   const res = await axiosInstance.get(
     `/social/comments/${contentType}/${contentId}/count`,
   );
+  return res.data;
+};
+
+// about api
+export const getAbout = async () => {
+  const res = await axiosInstance.get("/about");
+  return res.data;
+};
+
+export const createAbout = async (formData) => {  
+  const res = await axiosInstance.post("/about", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+};
+
+export const updateAbout = async (formData) => {
+  const res = await axiosInstance.put("/about", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+export const deleteAboutImage = async () => {
+  const res = await axiosInstance.delete("/about/image");
   return res.data;
 };

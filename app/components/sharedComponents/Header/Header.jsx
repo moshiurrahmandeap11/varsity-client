@@ -115,7 +115,7 @@ const Header = memo(() => {
     <>
       {/* Desktop / Tablet Header */}
       <header className="sticky top-0 z-999 border-b border-white/10 bg-white/10 backdrop-blur-3xl shadow-[0_8px_32px_rgba(255,255,255,0.08)]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-11/12 md:max-w-9/12 mx-auto  md:px-6">
           <div className="h-16 flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group shrink-0">

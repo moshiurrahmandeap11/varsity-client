@@ -64,7 +64,7 @@ const Hero = () => {
     return otherBanners.slice(0, 2).map((banner, idx) => ({
       id: banner._id,
       title: banner.title,
-      description: banner.description || "Special Offer",
+      description: banner.description || "",
       image: banner.image?.url,
     }));
   };
@@ -133,9 +133,6 @@ const Hero = () => {
 
               {/* Banner Content */}
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
-                <div className="inline-block bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-semibold mb-3">
-                  Special Offer
-                </div>
                 <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-2">
                   {currentBanner.title}
                 </h1>
