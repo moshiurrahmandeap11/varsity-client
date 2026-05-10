@@ -151,3 +151,10 @@ export const deleteGallery = async (id) => {
   const res = await axiosInstance.delete(`/gallery/${id}`);
   return res.data;
 };
+
+
+// user api
+export const getCurrentUser = async() =>{
+  const res = await axiosInstance.get("/users/me");
+  return res.data;
+}

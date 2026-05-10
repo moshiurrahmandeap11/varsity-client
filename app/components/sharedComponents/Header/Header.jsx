@@ -19,7 +19,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useState } from "react";
 
 const Header = memo(() => {
-  const { user, logOut, loading } = useAuth();
+  const { user, LogOut, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -50,7 +50,7 @@ const Header = memo(() => {
 
   const handleLogout = useCallback(async () => {
     try {
-      await logOut();
+      await LogOut();
       router.push("/");
     } catch (error) {
       console.error(error);
@@ -58,7 +58,7 @@ const Header = memo(() => {
       setIsProfileOpen(false);
       setIsMobileMenuOpen(false);
     }
-  }, [logOut, router]);
+  }, [LogOut, router]);
 
   const navItems = [
     {
@@ -167,7 +167,7 @@ const Header = memo(() => {
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen((prev) => !prev)}
-                    className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 px-2 py-1.5 backdrop-blur-xl transition-all duration-300"
+                    className="flex items-center gap-2 rounded-2xl bg-white/10 hover:bg-white/15 cursor-pointer border border-white/10 px-2 py-1.5 backdrop-blur-xl transition-all duration-300"
                   >
                     {user?.photoURL ? (
                       <Image
@@ -197,7 +197,7 @@ const Header = memo(() => {
 
                   {/* Profile Dropdown */}
                   <div
-                    className={`absolute right-0 mt-3 w-64 rounded-3xl border border-white/10 bg-white/10 backdrop-blur-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
+                    className={`absolute right-0 mt-3 w-64 rounded-3xl border border-white/10 bg-black/70 backdrop-blur-3xl shadow-2xl overflow-hidden transition-all duration-300 ${
                       isProfileOpen
                         ? "opacity-100 translate-y-0 visible"
                         : "opacity-0 -translate-y-4 invisible"
