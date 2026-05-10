@@ -1,4 +1,9 @@
-import { LayoutDashboard, Settings, Users } from "lucide-react";
+import {
+  GalleryThumbnails,
+  LayoutDashboard,
+  Settings,
+  Users,
+} from "lucide-react";
 import { FcAbout } from "react-icons/fc";
 import { GrAnnounce } from "react-icons/gr";
 import { PiFlagBanner } from "react-icons/pi";
@@ -34,15 +39,24 @@ export const sidebarItems = [
   },
   {
     id: 5,
+    name: "Gallery",
+    icon: GalleryThumbnails,
+    children: [
+      { id: 51, name: "Gallery", href: "/admin/gallery" },
+      { id: 52, name: "Add Gallery", href: "/admin/gallery/add" },
+    ],
+  },
+  {
+    id: 6,
     name: "User Management",
     icon: Users,
     children: [
-      { id: 51, name: "All Users", href: "/admin/users" },
-      { id: 52, name: "Add User", href: "/admin/users/add" },
-      { id: 53, name: "Roles & Permissions", href: "/admin/users/roles" },
+      { id: 61, name: "All Users", href: "/admin/users" },
+      { id: 62, name: "Add User", href: "/admin/users/add" },
+      { id: 63, name: "Roles & Permissions", href: "/admin/users/roles" },
     ],
   },
-  { id: 6, name: "Settings", href: "/admin/settings", icon: Settings },
+  { id: 7, name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 // helper: faltten items for easier path matching

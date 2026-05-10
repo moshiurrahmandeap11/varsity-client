@@ -77,8 +77,8 @@ const Header = memo(() => {
       icon: BookOpen,
     },
     {
-      name: "Admission",
-      href: "/admission",
+      name: "Gallery",
+      href: "/gallery",
       icon: GraduationCap,
     },
     {

@@ -120,3 +120,34 @@ export const deleteAboutImage = async () => {
   const res = await axiosInstance.delete("/about/image");
   return res.data;
 };
+
+// Gallery API
+export const getGallery = async (type = "") => {
+  const query = type ? `?type=${type}` : "";
+  const res = await axiosInstance.get(`/gallery${query}`);
+  return res.data;
+};
+
+export const getSingleGallery = async (id) => {
+  const res = await axiosInstance.get(`/gallery/${id}`);
+  return res.data;
+};
+
+export const createGallery = async (formData) => {
+  const res = await axiosInstance.post("/gallery", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const updateGallery = async (id, formData) => {
+  const res = await axiosInstance.put(`/gallery/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const deleteGallery = async (id) => {
+  const res = await axiosInstance.delete(`/gallery/${id}`);
+  return res.data;
+};
