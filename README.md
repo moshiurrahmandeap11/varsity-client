@@ -28,7 +28,7 @@
 
   <!-- QUICK LINKS -->
   <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px;">
-    <a href="#live-demo" style="text-decoration: none;">
+    <a href="https://varsity-client.vercel.app/" style="text-decoration: none;">
       <img src="https://img.shields.io/badge/Live_Demo-Visit_Site-4F46E5?style=for-the-badge&labelColor=1e293b" alt="Live Demo" />
     </a>
     <a href="#features" style="text-decoration: none;">
