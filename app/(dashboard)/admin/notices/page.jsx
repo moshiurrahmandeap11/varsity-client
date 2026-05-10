@@ -1,53 +1,63 @@
 "use client";
+
 import axiosInstance from "@/app/components/sharedComponents/AxiosInstance/AxiosInstance";
 import DeleteConfirmModal from "@/app/components/sharedComponents/DeleteConfirmModal/DeleteConfirmModal";
 import FilePreview from "@/app/components/sharedComponents/FilePreview/FilePreview";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
-    FiAlertCircle,
-    FiCalendar,
-    FiChevronLeft,
-    FiChevronRight,
-    FiEdit2,
-    FiEye,
-    FiFileText,
-    FiFilter,
-    FiSearch,
-    FiTrash2,
-    FiUser,
-    FiX,
+  FiAlertCircle,
+  FiCalendar,
+  FiChevronLeft,
+  FiChevronRight,
+  FiEdit2,
+  FiEye,
+  FiFileText,
+  FiFilter,
+  FiSearch,
+  FiTrash2,
+  FiUser,
+  FiX,
 } from "react-icons/fi";
 
 const Notices = () => {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
+
   const [currentPage, setCurrentPage] = useState(1);
+
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   const itemsPerPage = 6;
 
-  // Fetch notices
+  // FETCH NOTICES
   const fetchNotices = async () => {
-    setLoading(true);
     try {
-      let query = "";
-      if (filterCategory !== "all") query += `?category=${filterCategory}`;
-      if (filterPriority !== "all") {
-        query += query
-          ? `&priority=${filterPriority}`
-          : `?priority=${filterPriority}`;
-      }
-      query += query ? `&isActive=true` : `?isActive=true`;
+      setLoading(true);
 
-      const response = await axiosInstance.get(`/notices${query}`);
-      setNotices(response?.data?.data || []);
-    } catch (error) {
-      console.error("Error fetching notices:", error);
+      const params = new URLSearchParams();
+
+      if (filterCategory !== "all") {
+        params.append("category", filterCategory);
+      }
+
+      if (filterPriority !== "all") {
+        params.append("priority", filterPriority);
+      }
+
+      params.append("isActive", "true");
+
+      const res = await axiosInstance.get(`/notices?${params.toString()}`);
+
+      setNotices(res?.data?.data || []);
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to fetch notices");
     } finally {
       setLoading(false);
@@ -55,124 +65,123 @@ const Notices = () => {
   };
 
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
+    const timeout = setTimeout(() => {
       fetchNotices();
     }, 300);
-    delayDebounce();
 
-    return () => clearTimeout(delayDebounce);
+    return () => clearTimeout(timeout);
   }, [filterCategory, filterPriority]);
 
-  // Delete notice
+  // SEARCH FILTER
+  const filteredNotices = useMemo(() => {
+    return notices.filter((notice) => {
+      const title = notice?.title?.toLowerCase() || "";
+      const desc = notice?.description?.toLowerCase() || "";
+
+      return (
+        title.includes(searchTerm.toLowerCase()) ||
+        desc.includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [notices, searchTerm]);
+
+  // PAGINATION
+  const totalPages = Math.ceil(filteredNotices.length / itemsPerPage);
+
+  const paginatedNotices = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+
+    return filteredNotices.slice(start, start + itemsPerPage);
+  }, [filteredNotices, currentPage]);
+
+  // RESET PAGE
+  useEffect(() => {
+    const trySolve = async () => {
+      setCurrentPage(1);
+    };
+    trySolve();
+  }, [searchTerm, filterCategory, filterPriority]);
+
+  // DELETE
   const handleDelete = async () => {
     if (!selectedNotice) return;
 
     try {
       const res = await axiosInstance.delete(`/notices/${selectedNotice._id}`);
+
       if (res.data.success) {
-        toast.success("Notice deleted successfully");
-        fetchNotices();
+        toast.success("Notice deleted");
+
+        setNotices((prev) => prev.filter((n) => n._id !== selectedNotice._id));
+
         setShowDeleteModal(false);
         setSelectedNotice(null);
-      } else {
-        toast.error(res.data.message || "Failed to delete notice");
       }
-    } catch (error) {
-      console.error("Error deleting notice:", error);
-      toast.error("Failed to delete notice");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete");
     }
   };
 
-  // Filter notices by search
-  const filteredNotices = notices.filter(
-    (notice) =>
-      notice.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notice.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  // Pagination
-  const totalPages = Math.ceil(filteredNotices.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedNotices = filteredNotices.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      setCurrentPage(1);
-    }, 300);
-    return () => clearTimeout(delayDebounce);
-  }, [searchTerm, filterCategory, filterPriority]);
-
-  // Get priority badge style
+  // PRIORITY
   const getPriorityBadge = (priority) => {
     switch (priority) {
       case "urgent":
-        return {
-          bg: "bg-red-100",
-          text: "text-red-700",
-          label: "Urgent",
-          icon: "🔴",
-        };
+        return "bg-red-500/20 text-red-200 border border-red-500/20";
+
       case "high":
-        return {
-          bg: "bg-orange-100",
-          text: "text-orange-700",
-          label: "High",
-          icon: "🟠",
-        };
+        return "bg-orange-500/20 text-orange-200 border border-orange-500/20";
+
       default:
-        return {
-          bg: "bg-blue-100",
-          text: "text-blue-700",
-          label: "Normal",
-          icon: "🟢",
-        };
+        return "bg-blue-500/20 text-blue-200 border border-blue-500/20";
     }
   };
 
-  // Get category icon
+  // CATEGORY ICON
   const getCategoryIcon = (category) => {
     switch (category) {
       case "academic":
         return "📚";
+
       case "exam":
         return "✍️";
+
       case "event":
         return "🎉";
+
       case "holiday":
         return "🎊";
+
       case "result":
         return "📊";
+
       case "workshop":
         return "💻";
+
       default:
         return "📢";
     }
   };
 
-  // Loading skeleton
+  // LOADING
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 p-4 md:p-8">
+      <div className="min-h-screen bg-[#070b14] p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-10 bg-gray-200 rounded-lg w-48 mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="bg-white/30 backdrop-blur-lg rounded-2xl shadow-lg p-6"
-                >
-                  <div className="h-48 bg-gray-200 rounded-xl mb-4"></div>
-                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="
+                h-105
+                rounded-4xl
+                border border-white/10
+                bg-white/5
+                backdrop-blur-2xl
+                animate-pulse
+              "
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -180,56 +189,123 @@ const Notices = () => {
   }
 
   return (
-    <div className="min-h-screen text-black bg-linear-to-br from-gray-50 via-white to-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 p-6 mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="min-h-screen overflow-hidden bg-[#070b14] text-white relative">
+      {/* BG BLOBS */}
+      <div className="absolute top-0 left-0 w-125 h-125 bg-blue-500/10 blur-[120px] rounded-full" />
+      <div className="absolute bottom-0 right-0 w-125 h-125 bg-cyan-500/10 blur-[120px] rounded-full" />
+
+      <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
+        {/* HEADER */}
+        <div
+          className="
+          relative overflow-hidden
+          rounded-4xl
+          border border-white/10
+          bg-white/5
+          backdrop-blur-2xl
+          p-8
+          mb-8
+        "
+        >
+          <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent" />
+
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-linear-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold tracking-tight">
                 Department Notices
               </h1>
-              <p className="text-gray-500 text-sm mt-1">
-                Stay updated with latest announcements and notices
+
+              <p className="text-gray-400 mt-2">
+                Latest announcements and department updates
               </p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 bg-white/30 backdrop-blur-sm px-4 py-2 rounded-xl">
-              <FiFileText className="w-4 h-4" />
-              <span>Total: {filteredNotices.length} notices</span>
+
+            <div
+              className="
+              flex items-center gap-3
+              px-5 py-3
+              rounded-2xl
+              border border-white/10
+              bg-white/5
+            "
+            >
+              <FiFileText />
+
+              <span className="text-sm text-gray-300">
+                {filteredNotices.length} Notices
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 p-5 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        {/* FILTERS */}
+        <div
+          className="
+          rounded-4xl
+          border border-white/10
+          bg-white/5
+          backdrop-blur-2xl
+          p-5
+          mb-8
+        "
+        >
+          <div className="flex flex-col xl:flex-row gap-4">
+            {/* SEARCH */}
+            <div className="relative flex-1">
+              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+
               <input
                 type="text"
-                placeholder="Search by title or description..."
+                placeholder="Search notices..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="
+                w-full h-12
+                rounded-2xl
+                border border-white/10
+                bg-white/5
+                backdrop-blur-xl
+                pl-12 pr-12
+                outline-none
+                text-sm
+                transition-all
+                focus:border-blue-500/40
+                focus:bg-white/10
+              "
               />
+
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="
+                  absolute right-4 top-1/2
+                  -translate-y-1/2
+                  text-gray-400
+                  hover:text-white
+                "
                 >
-                  <FiX className="w-4 h-4" />
+                  <FiX />
                 </button>
               )}
             </div>
 
-            {/* Category Filter */}
-            <div className="relative min-w-40">
-              <FiFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            {/* CATEGORY */}
+            <div className="relative">
+              <FiFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="pl-10 pr-8 py-2.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                className="
+                h-12 min-w-55
+                rounded-2xl
+                border border-white/10
+                bg-white/5
+                backdrop-blur-xl
+                pl-12 pr-5
+                outline-none
+                appearance-none
+              "
               >
                 <option value="all">All Categories</option>
                 <option value="general">📢 General</option>
@@ -242,13 +318,23 @@ const Notices = () => {
               </select>
             </div>
 
-            {/* Priority Filter */}
-            <div className="relative min-w-37.5">
-              <FiAlertCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            {/* PRIORITY */}
+            <div className="relative">
+              <FiAlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value)}
-                className="pl-10 pr-8 py-2.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                className="
+                h-12 min-w-55
+                rounded-2xl
+                border border-white/10
+                bg-white/5
+                backdrop-blur-xl
+                pl-12 pr-5
+                outline-none
+                appearance-none
+              "
               >
                 <option value="all">All Priorities</option>
                 <option value="normal">🟢 Normal</option>
@@ -259,162 +345,244 @@ const Notices = () => {
           </div>
         </div>
 
-        {/* Notices Grid */}
+        {/* EMPTY */}
         {paginatedNotices.length === 0 ? (
-          <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <FiFileText className="w-20 h-20 mx-auto" />
-            </div>
-            <h3 className="text-xl font-medium text-gray-600 mb-2">
-              No notices found
-            </h3>
-            <p className="text-gray-400">Check back later for updates</p>
+          <div
+            className="
+            rounded-4xl
+            border border-white/10
+            bg-white/5
+            backdrop-blur-2xl
+            p-20
+            text-center
+          "
+          >
+            <FiFileText className="w-20 h-20 mx-auto text-gray-500 mb-5" />
+
+            <h2 className="text-2xl font-semibold">No Notices Found</h2>
+
+            <p className="text-gray-400 mt-2">
+              Try changing filters or search query
+            </p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {paginatedNotices.map((notice) => {
-                const priorityBadge = getPriorityBadge(notice.priority);
-                return (
-                  <div
-                    key={notice._id}
-                    className="group bg-white/30 backdrop-blur-lg rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-white/40 hover:border-white/60 transform hover:-translate-y-1"
-                  >
-                    {/* File Preview Section */}
-                    {notice.file && (
-                      <div className="p-4 pb-0">
-                        <FilePreview
-                          fileUrl={notice.file.url}
-                          title={notice.title}
-                        />
+            {/* GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-7">
+              {paginatedNotices.map((notice) => (
+                <div
+                  key={notice._id}
+                  className="
+                  group relative overflow-hidden
+                  rounded-4xl
+                  border border-white/10
+                  bg-white/5
+                  backdrop-blur-2xl
+                  transition-all duration-500
+                  hover:bg-white/8
+                  hover:border-white/20
+                  hover:-translate-y-1
+                  hover:shadow-[0_20px_80px_rgba(0,0,0,0.4)]
+                "
+                >
+                  {/* LIQUID BLOBS */}
+                  <div className="absolute -top-20 -right-20 w-52 h-52 bg-white/5 blur-3xl rounded-full" />
+                  <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full" />
+
+                  {/* FILE */}
+                  {notice?.file?.url && (
+                    <div className="p-4 pb-0">
+                      <FilePreview
+                        fileUrl={notice.file.url}
+                        title={notice.title}
+                      />
+                    </div>
+                  )}
+
+                  {/* CONTENT */}
+                  <div className="relative p-6">
+                    {/* TOP */}
+                    <div className="flex justify-between items-start gap-3 mb-5">
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className={`
+                          px-3 py-1 rounded-xl text-xs font-medium
+                          ${getPriorityBadge(notice.priority)}
+                        `}
+                        >
+                          {notice.priority || "normal"}
+                        </span>
+
+                        <span
+                          className="
+                          px-3 py-1 rounded-xl
+                          bg-white/10 border border-white/10
+                          text-xs text-gray-300
+                        "
+                        >
+                          {getCategoryIcon(notice.category)} {notice.category}
+                        </span>
                       </div>
+
+                      {/* ACTIONS */}
+                      <div
+                        className="
+                        flex gap-2
+                        opacity-0 group-hover:opacity-100
+                        transition-all duration-300
+                      "
+                      >
+                        <Link
+                          href={`/admin/notices/edit/${notice._id}`}
+                          className="
+                          h-10 w-10
+                          rounded-2xl
+                          bg-blue-500/20
+                          border border-blue-500/20
+                          flex items-center justify-center
+                          hover:bg-blue-500/30
+                        "
+                        >
+                          <FiEdit2 />
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            setSelectedNotice(notice);
+                            setShowDeleteModal(true);
+                          }}
+                          className="
+                          h-10 w-10
+                          rounded-2xl
+                          bg-red-500/20
+                          border border-red-500/20
+                          flex items-center justify-center
+                          hover:bg-red-500/30
+                        "
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* TITLE */}
+                    <h2 className="text-2xl font-bold leading-tight mb-3 line-clamp-2">
+                      {notice.title}
+                    </h2>
+
+                    {/* DESC */}
+                    {notice.description && (
+                      <p className="text-gray-300 leading-relaxed line-clamp-3 mb-6">
+                        {notice.description}
+                      </p>
                     )}
 
-                    {/* Notice Content */}
-                    <div className="p-5">
-                      {/* Header with Priority and Category */}
-                      <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                        <div className="flex flex-wrap gap-2">
-                          <span
-                            className={`px-2 py-1 rounded-lg text-xs font-medium ${priorityBadge.bg} ${priorityBadge.text}`}
-                          >
-                            {priorityBadge.icon} {priorityBadge.label}
-                          </span>
-                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
-                            {getCategoryIcon(notice.category)} {notice.category}
-                          </span>
-                        </div>
+                    {/* META */}
+                    <div className="flex flex-wrap gap-5 text-sm text-gray-400 mb-6">
+                      <div className="flex items-center gap-2">
+                        <FiCalendar />
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                          <Link
-                            href={`/admin/notices/edit/${notice._id}`}
-                            className="p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            onClick={() => {
-                              setSelectedNotice(notice);
-                              setShowDeleteModal(true);
-                            }}
-                            className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
-                            title="Delete"
-                          >
-                            <FiTrash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <span>
+                          {new Date(
+                            notice.publishDate || notice.createdAt,
+                          ).toLocaleDateString()}
+                        </span>
                       </div>
 
-                      {/* Title */}
-                      <h2 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">
-                        {notice.title}
-                      </h2>
+                      <div className="flex items-center gap-2">
+                        <FiEye />
 
-                      {/* Description */}
-                      {notice.description && (
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                          {notice.description}
-                        </p>
+                        <span>{notice.views || 0}</span>
+                      </div>
+
+                      {notice.author && (
+                        <div className="flex items-center gap-2">
+                          <FiUser />
+
+                          <span>{notice.author}</span>
+                        </div>
                       )}
-
-                      {/* Metadata */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 mb-4">
-                        <div className="flex items-center gap-1">
-                          <FiCalendar className="w-3 h-3" />
-                          <span>
-                            Published:{" "}
-                            {new Date(
-                              notice.publishDate || notice.createdAt,
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FiEye className="w-3 h-3" />
-                          <span>{notice.views || 0} views</span>
-                        </div>
-                        {notice.author && (
-                          <div className="flex items-center gap-1">
-                            <FiUser className="w-3 h-3" />
-                            <span>By: {notice.author}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* View Details Link */}
-                      <Link
-                        href={`/notices/${notice._id}`}
-                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
-                      >
-                        Read More
-                        <FiChevronRight className="w-4 h-4" />
-                      </Link>
                     </div>
+
+                    {/* BTN */}
+                    <Link
+                      href={`/notices/${notice._id}`}
+                      className="
+                      inline-flex items-center gap-2
+                      px-5 py-3
+                      rounded-2xl
+                      bg-blue-500/20
+                      border border-blue-500/20
+                      text-blue-200
+                      hover:bg-blue-500/30
+                      transition-all
+                    "
+                    >
+                      Read More
+                      <FiChevronRight />
+                    </Link>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Pagination */}
+            {/* PAGINATION */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8">
+              <div className="flex justify-center items-center gap-3 mt-10 flex-wrap">
                 <button
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentPage === 1}
-                  className="p-2 bg-white/40 backdrop-blur-sm rounded-lg border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/60 transition-all"
+                  className="
+                  h-11 w-11
+                  rounded-2xl
+                  border border-white/10
+                  bg-white/5
+                  backdrop-blur-xl
+                  disabled:opacity-40
+                "
                 >
-                  <FiChevronLeft className="w-5 h-5" />
+                  <FiChevronLeft className="mx-auto" />
                 </button>
 
-                <div className="flex gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                          currentPage === page
-                            ? "bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-md"
-                            : "bg-white/40 backdrop-blur-sm text-gray-600 hover:bg-white/60"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ),
-                  )}
-                </div>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`
+                    h-11 min-w-11 px-4
+                    rounded-2xl
+                    border
+                    transition-all
+                    ${
+                      currentPage === page
+                        ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/30"
+                        : "bg-white/5 border-white/10 hover:bg-white/10"
+                    }
+                  `}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
 
                 <button
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="p-2 bg-white/40 backdrop-blur-sm rounded-lg border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/60 transition-all"
+                  className="
+                  h-11 w-11
+                  rounded-2xl
+                  border border-white/10
+                  bg-white/5
+                  backdrop-blur-xl
+                  disabled:opacity-40
+                "
                 >
-                  <FiChevronRight className="w-5 h-5" />
+                  <FiChevronRight className="mx-auto" />
                 </button>
               </div>
             )}
@@ -422,11 +590,11 @@ const Notices = () => {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* DELETE MODAL */}
       {showDeleteModal && (
         <DeleteConfirmModal
           title="Delete Notice"
-          message={`Are you sure you want to delete "${selectedNotice?.title}"? This action cannot be undone.`}
+          message={`Delete "${selectedNotice?.title}" ?`}
           onConfirm={handleDelete}
           onCancel={() => {
             setShowDeleteModal(false);

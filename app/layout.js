@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import AuthProvider from "./contexts/AuthProvider";
 import "./globals.css";
+import TanStackProvider from "./components/sharedComponents/TanStackProvider/TanStackProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,16 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          {children} <Toaster />
+          <TanStackProvider>
+            {children}{" "}
+            <Toaster
+              position="top-right"
+              reverseOrder={false}
+              toastOptions={{
+                duration: 3000,
+              }}
+            />
+          </TanStackProvider>
         </AuthProvider>
       </body>
     </html>

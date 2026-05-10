@@ -6,16 +6,18 @@ import axiosInstance from "../sharedComponents/AxiosInstance/AxiosInstance";
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [notices, setNotices] = useState([]);
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
-  console.log("slides data :", slides);
 
   useEffect(() => {
     const fetchSlides = async () => {
       try {
         const response = await axiosInstance.get("/banners?activeOnly=true");
         // Filter only active banners
-        const activeBanners = response.data.data?.filter(banner => banner.isActive === true) || [];
+        const activeBanners =
+          response.data.data?.filter((banner) => banner.isActive === true) ||
+          [];
         setSlides(activeBanners);
       } catch (error) {
         console.error("Error fetching banners:", error);
@@ -27,10 +29,18 @@ const Hero = () => {
     fetchSlides();
   }, []);
 
+  useEffect(() => {
+    const tryFetching = async () => {
+      const res = await axiosInstance.get("/notices");
+      setNotices(res.data.data);
+    };
+    tryFetching();
+  }, []);
+
   // Auto slide only if slides exist
   useEffect(() => {
     if (slides.length === 0) return;
-    
+
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
@@ -48,14 +58,14 @@ const Hero = () => {
   // Create small grid items from remaining banners (excluding current slide)
   const getSmallGridItems = () => {
     if (slides.length < 2) return [];
-    
+
     // Get banners excluding the current slide and take first 2
     const otherBanners = slides.filter((_, idx) => idx !== currentSlide);
     return otherBanners.slice(0, 2).map((banner, idx) => ({
       id: banner._id,
       title: banner.title,
       description: banner.description || "Special Offer",
-      image: banner.image?.url
+      image: banner.image?.url,
     }));
   };
 
@@ -86,8 +96,12 @@ const Hero = () => {
       <div className="w-full bg-linear-to-b from-base-200 to-base-100">
         <div className="md:max-w-10/12 mx-auto px-4 py-8 md:py-12">
           <div className="bg-gray-100 rounded-2xl p-12 text-center">
-            <h2 className="text-2xl font-semibold text-gray-600">No Active Banners</h2>
-            <p className="text-gray-400 mt-2">Please add banners from admin panel</p>
+            <h2 className="text-2xl font-semibold text-gray-600">
+              No Active Banners
+            </h2>
+            <p className="text-gray-400 mt-2">
+              Please add banners from admin panel
+            </p>
           </div>
         </div>
       </div>
@@ -104,7 +118,10 @@ const Hero = () => {
           <div className="lg:col-span-2 relative group">
             <div className="relative h-96 md:h-125 lg:h-137.5 rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src={currentBanner.image?.url || "https://via.placeholder.com/1200x600?text=No+Image"}
+                src={
+                  currentBanner.image?.url ||
+                  "https://via.placeholder.com/1200x600?text=No+Image"
+                }
                 alt={currentBanner.title}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -131,7 +148,9 @@ const Hero = () => {
                   <Link
                     href={currentBanner.link}
                     className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-full font-semibold transition-all transform hover:scale-105"
-                    target={currentBanner.link.startsWith('http') ? "_blank" : "_self"}
+                    target={
+                      currentBanner.link.startsWith("http") ? "_blank" : "_self"
+                    }
                   >
                     Learn More →
                   </Link>
@@ -207,7 +226,10 @@ const Hero = () => {
                 className="relative group h-48 md:h-61.25 lg:h-66.25 rounded-2xl overflow-hidden shadow-lg cursor-pointer"
               >
                 <Image
-                  src={item.image || "https://via.placeholder.com/600x400?text=No+Image"}
+                  src={
+                    item.image ||
+                    "https://via.placeholder.com/600x400?text=No+Image"
+                  }
                   alt={item.title}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -221,7 +243,9 @@ const Hero = () => {
                     {item.title}
                   </h3>
                   <Link
-                    href={slides.find(s => s._id === item.id)?.link || "/products"}
+                    href={
+                      slides.find((s) => s._id === item.id)?.link || "/products"
+                    }
                     className="inline-flex items-center gap-1 text-sm bg-white/20 backdrop-blur-sm hover:bg-white hover:text-gray-900 px-3 py-1 rounded-full transition-all"
                     target="_self"
                   >
@@ -234,17 +258,19 @@ const Hero = () => {
         </div>
 
         {/* Announcement Bar */}
-        <div className="mt-8 bg-linear-to-r from-red-500 via-orange-500 to-amber-500 rounded-xl overflow-hidden shadow-lg">
-          <div className="py-3 px-4 overflow-hidden">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-linear-to-r from-red-500 via-orange-500 to-amber-500 shadow-2xl">
+          <div className="relative flex overflow-x-hidden py-3">
             <div className="animate-marquee whitespace-nowrap">
-              <span className="inline-flex items-center gap-8 text-white font-semibold">
-                🎉 NEW BANNERS ADDED 🎉 &nbsp;&nbsp;|&nbsp;&nbsp; 
-                📢 Check out our latest updates &nbsp;&nbsp;|&nbsp;&nbsp; 
-                ⭐ Special announcements coming soon &nbsp;&nbsp;|&nbsp;&nbsp; 
-                🔔 Stay tuned for more &nbsp;&nbsp;|&nbsp;&nbsp; 
-                🚀 Explore our new content &nbsp;&nbsp;|&nbsp;&nbsp; 
-                🎉 NEW BANNERS ADDED 🎉
-              </span>
+              <Link href={"/notices"}>
+                {notices?.map((notice) => (
+                  <span
+                    key={notice?._id}
+                    className="mx-8 inline-flex items-center text-sm font-semibold text-white md:text-base"
+                  >
+                    {notice?.title}
+                  </span>
+                ))}
+              </Link>
             </div>
           </div>
         </div>
